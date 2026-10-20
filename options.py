@@ -15,14 +15,16 @@ raw = web.DataReader(list(series), "fred", start=f"{today.year}-{today.month}-{t
 
 # returns a dictionary that has the price of the underlying move according to its iv in a given time.
 # accounts for underlying moving up and down
-def pred_opt_price(opt: str, flag: str, S: float, K: float, iv: float, date: dt.date, exp: dt.date) -> dict[float, float]:
-    time_delta = years_til(date, exp)
+def pred_opt_price(opt: str, flag: str, S: float, K: float, iv: float, s_date: dt.date, e_date: dt.date, exp: dt.date) -> dict[float, float]:
+    time_delta = years_til(s_date, e_date)
+    time_til_exp = years_til(e_date, exp)
+    print("time_to_exp:", time_til_exp)
     adj_iv = iv * np.sqrt(time_delta)
     S_up = (1 + adj_iv) * S
     S_down = (1 - adj_iv) * S
-    r = risk_free_interp(date, exp)
-    price_if_S_up = bs_price(flag, S_up, K, time_delta, r, iv)
-    price_if_S_down = bs_price(flag, S_down, K, time_delta, r, iv)
+    r = risk_free_interp(e_date, exp)
+    price_if_S_up = bs_price(flag, S_up, K, time_til_exp, r, iv)
+    price_if_S_down = bs_price(flag, S_down, K, time_til_exp, r, iv)
 
     return {S_up:price_if_S_up, S_down:price_if_S_down}
 
@@ -115,19 +117,24 @@ if __name__ == "__main__":
             K = float(input("Enter the strike price:"))
             P = float(input("Enter the option price:"))
             iv = float(input("Enter the implied volatility:"))
-            date_choice = input("Do you want to use todays date [y/n]:")
-            date = today
+            date_choice = input("Do you want to use todays date for the initial date? [y/n]:")
+            s_date = today
             if date_choice == "n":
                 y = input("Enter the year YYYY:")
                 m = input("Enter the month MM:")
                 d = input("Enter the day DD:")
-                date = dt.date(int(y), int(m), int(d))
+                s_date = dt.date(int(y), int(m), int(d))
+            print("Enter the date you want to find the option prices of.\nMake sure it's after the initial date")
+            y = input("Enter the year YYYY:")
+            m = input("Enter the month MM:")
+            d = input("Enter the day DD:")
+            e_date = dt.date(int(y), int(m), int(d))
             print("Enter the option's expiration date")
             exp_y = input("Enter the year YYYY:")
             exp_m = input("Enter the month MM:")
             exp_d = input("Enter the day DD:")
             exp = dt.date(int(exp_y), int(exp_m), int(exp_d))
-            opt_preds = pred_opt_price(opt, flag, S, K, iv, date, exp)
+            opt_preds = pred_opt_price(opt, flag, S, K, iv, s_date, e_date, exp)
             S_up = max(opt_preds.keys())
             S_down = min(opt_preds.keys())
             gain, loss = get_gain_loss(opt_preds[S_up], opt_preds[S_down], P, flag)
