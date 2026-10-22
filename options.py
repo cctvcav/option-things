@@ -11,7 +11,7 @@ percents = [-5, -4, -3, -2, -1, -.9, -.8, -.7, -.6, -.5, -.4, -.3, -.2, -.15, -.
             0, .01, .025, .05, .1, .125, .15, .2, .3, .4, .5, .6, .7, .8, .9, 1, 2, 3, 4, 5]
 
 series = {"DGS1MO": 1/12, "DGS3MO": 3/12, "DGS6MO": 6/12, "DGS1": 1, "DGS2": 2}
-raw = web.DataReader(list(series), "fred", start=f"{today.year}-{today.month}-{today.day-7}").ffill()
+raw = web.DataReader(list(series), "fred", start=f"{today.year}-{today.month}-{today.day-12}").ffill()
 
 # returns a dictionary that has the price of the underlying move according to its iv in a given time.
 # accounts for underlying moving up and down
@@ -36,7 +36,7 @@ def pred_opt_mvt(opt: str, flag: str, S: float, K: float, iv: float, date: dt.da
         high = interval[1]
         low_bs = bs_price(flag, low, K, years_til(date, exp), risk_free_interp(date, exp), iv)
         high_bs = bs_price(flag, high, K, years_til(date, exp), risk_free_interp(date, exp), iv)
-        res[(low, high):percent]
+        res[(low_bs, high_bs)] = percent
     return res
 
 def pred_sec_mvt(opt: str, S: float, iv: float, date: dt.date, way: str = "basic") -> dict[tuple[float, float], float]:
@@ -139,5 +139,33 @@ if __name__ == "__main__":
             S_down = min(opt_preds.keys())
             gain, loss = get_gain_loss(opt_preds[S_up], opt_preds[S_down], P, flag)
             print(f"Underlying 1-week up: {S_up}\nUnderlying 1-week down: {S_down}\nGain: {gain}\nLoss: {loss}\nGain:Loss: {gain/loss}")
+        if user_input == "p":
+            while(True):
+                flag = input("Enter \"c\" for call or \"p\" for put: ")
+                if flag == "c" or flag == "p":
+                    break
+                print(f"{flag} is not \"c\" or \"p\"")
+            S = float(input("Enter the stock price: "))
+            K = float(input("Enter the strike price: "))
+            date_choice = input("Do you want to use todays date for the initial date? [y/n]:")
+            date = today
+            if date_choice == "n":
+                print("Enter the date you want to find the option price of.")
+                y = input("Enter the year YYYY:")
+                m = input("Enter the month MM:")
+                d = input("Enter the day DD:")
+                date = dt.date(int(y), int(m), int(d))
+            print("Enter the option's expiration date")
+            exp_y = input("Enter the year YYYY:")
+            exp_m = input("Enter the month MM:")
+            exp_d = input("Enter the day DD:")
+            exp = dt.date(int(exp_y), int(exp_m), int(exp_d))
+            t = (exp - date).days / 365
+            r = risk_free_interp(date, exp)
+            sigma = float(input("Enter the implied volatility: "))
+            opt_price = bs_price(flag, S, K, t, r, sigma)
+            print(f"Theoretical option price: {opt_price}")
+
+
 
         break
