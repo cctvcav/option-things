@@ -14,8 +14,8 @@ def monte_carlo(base: float, sigma: float, periods: int, num_sims: int = 1000, w
         sims[sim][0] = base
         if way == "normal":
             draws = rng.normal(loc=1, scale=sigma, size=periods)
-        for pd in range(1, periods+1):
-            sims[sim][pd] = sims[sim][pd-1] * draws
+        for day in range(1, periods+1):
+            sims[sim][day] = sims[sim][day-1] * draws
     return sims
 
 def stock_mc(S: float, sigma: float, s_date: dt.date, e_date: dt.date, num_sims: int = 1000, way: str = "normal") -> np.ndarray:
@@ -26,9 +26,23 @@ def stock_mc(S: float, sigma: float, s_date: dt.date, e_date: dt.date, num_sims:
     sims = np.zeros((num_sims, len(period)))
     for sim in range(num_sims):
         sims[sim][0] = S
-        for pd in range(1, len(period)):
+        for day in range(1, len(period)):
             draw = 0
             if way == "normal":
-                draw = rng.normal(loc=1, scale=step_vol[pd])
-            sims[sim][pd] = sims[sim][pd-1] * draw
+                draw = rng.normal(loc=1, scale=step_vol[day])
+            sims[sim][day] = sims[sim][day-1] * draw
     return sims
+
+def prob_above(bound: float, sims: np.ndarray) -> float:
+    was_above = (bound <= sims).any(axis=1)
+    return was_above.mean()
+
+def prob_below(bound: float, sims: np.ndarray) -> float:
+    was_below = (bound >= sims).any(axis=1)
+    return was_below.mean()
+
+def prob_end_above(bound: float, sims: np.ndarray) -> float:
+    return (sims[:, -1] >= bound).mean()
+
+def prob_end_below(bound: float, sime: np.ndarray) -> float:
+    return (sime[:, -1] <= bound).mean()
