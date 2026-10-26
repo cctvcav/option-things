@@ -8,11 +8,13 @@ import pandas_datareader.data as web
 
 today = dt.date.today()
 
-# percents = [-5, -4, -3, -2, -1, -.9, -.8, -.7, -.6, -.5, -.4, -.3, -.2, -.15, -.125, -.1, -.05, -.025, -.01,\
-#             0, .01, .025, .05, .1, .125, .15, .2, .3, .4, .5, .6, .7, .8, .9, 1, 2, 3, 4, 5]
+percents = [-5, -4, -3, -2, -1, -.9, -.8, -.7, -.6, -.5, -.4, -.3, -.2, -.15, -.125, -.1, -.05, -.025, -.01,\
+            0, .01, .025, .05, .1, .125, .15, .2, .3, .4, .5, .6, .7, .8, .9, 1, 2, 3, 4, 5]
 
 percents = [-.05, -.025, -.01,\
             0, .01, .025, .05]
+
+percents = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]
 
 series = {"DGS1MO": 1/12, "DGS3MO": 3/12, "DGS6MO": 6/12, "DGS1": 1, "DGS2": 2}
 raw = web.DataReader(list(series), "fred", start=f"{today.year}-{today.month}-{today.day-12}").ffill()
@@ -49,10 +51,12 @@ def pred_opt_mvt(opt: str, flag: str, S: float, K: float, comp_iv: float, opt_iv
 
 def make_mvt_graph(opt: str, flag: str, K: float, s_date: dt.date, e_date: dt.date, exp: dt.date, percent_changes: dict[tuple[float, float], float]) -> None:
     key_list = list(percent_changes.keys())
-    edges = np.array([a for a, _ in key_list] + [key_list[-1][1]])
-    print(edges)
+    edges = np.array([round(a, 2) for a, _ in key_list] + [round(key_list[-1][1], 2)])
+    # print(edges)
     values = np.array([val for val in percent_changes.values()])
-    plt.bar(edges[:-1], values, width=np.diff(edges), align="edge", edgecolor="black")
+    pos = np.arange(len(values))
+    plt.bar(pos, values, width=1, align="edge", edgecolor="black")
+    plt.xticks(np.arange(len(edges)), edges)
     plt.title(f"{opt} {K} {flag} {exp.month}-{exp.day}-{exp.year}: {s_date.month}-{s_date.day}-{s_date.year} to {e_date.month}-{e_date.day}-{e_date.year}")
     plt.xlabel("Option Price")
     plt.ylabel("% Chance")
@@ -71,7 +75,7 @@ def basic_pred(S: float, iv: float, time_delta: dt.date) -> dict[tuple[float, fl
     adj_iv = iv * np.sqrt(time_delta)
     res = {}
     for i in range(len(percents) - 1):
-        start, end = percents[i]+1, percents[i+1]+1
+        start, end = (percents[i] * adj_iv)+1, (percents[i+1] * adj_iv)+1
         res[(start*S, end*S)] = norm.cdf(x=end*S, loc=S, scale=adj_iv*S) - norm.cdf(x=start*S, loc=S, scale=adj_iv*S)
     return res
 
